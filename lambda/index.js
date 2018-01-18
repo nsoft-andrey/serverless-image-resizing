@@ -9,7 +9,6 @@ const Sharp = require('sharp');
 const BUCKET = process.env.BUCKET;
 const URL = process.env.URL;
 const SECRET_KEY = process.env.SECRET_KEY;
-const RESIZED_IMAGES_PATH = process.env.RESIZED_IMAGES_PATH;
 
 exports.handler = function(event, context, callback) {
   var key = event.queryStringParameters.key;
@@ -39,6 +38,7 @@ exports.handler = function(event, context, callback) {
     .then(buffer => S3.putObject({
         Body: buffer,
         Bucket: BUCKET,
+        ACL: 'public-read',
         ContentType: 'image/png',
         Key: key,
       }).promise()
