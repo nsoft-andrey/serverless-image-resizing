@@ -32,7 +32,7 @@ exports.handler = function(event, context, callback) {
   S3.getObject({Bucket: BUCKET, Key: originalKey}).promise()
     .then(data => Sharp(data.Body)
       .resize(width, height)
-      .toFormat('png')
+      .toFormat('jpeg', {'quality': 90})
       .toBuffer()
     )
     .then(buffer => S3.putObject({
