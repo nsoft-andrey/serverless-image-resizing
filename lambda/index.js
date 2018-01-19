@@ -15,18 +15,40 @@ exports.handler = function(event, context, callback) {
   var key = event.queryStringParameters.key;
   var key_with_token = key.split('?t=');
 
+    // TODO: add the cropping support
+    // upscale - withoutEnlargement should be true
+
   if(key_with_token.length != 2) {
       return context.fail("Permissions denied");
   }
 
   key = key_with_token[0];
   const token = key_with_token[1];
-  const match = key.match(/(\d+)x(\d+)\/(.*)/);
-  const width = parseInt(match[1], 10);
-  const height = parseInt(match[2], 10);
-  const originalKey = match[3];
+  var match = key.match(/(\d+)x(\d+)\/(.*)/);
+  var width, height, originalKey;
+
+  if (match) {
+    width = parseInt(match[1], 10);
+    height = parseInt(match[2], 10);
+    originalKey = match[3];
+  }
+  else {
+    match = key.match(/(\d+)x\/(.*)/);
+    if (match) {
+      width = parseInt(match[1], 10);
+      height = null;
+    }
+    else {
+      match = key.match(/x(\d+)\/(.*)/);
+      width = null;
+      height = parseInt(match[1], 10);
+    }
+    originalKey = match[2];
+  }
+
   const hash = crypto.createHmac('sha256', SECRET_KEY).update(originalKey).digest('hex');
 
+      //.withoutEnlargement()
   if(token != hash) {
       return context.fail("Permissions denied");
   }
