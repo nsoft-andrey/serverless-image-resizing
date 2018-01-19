@@ -24,26 +24,36 @@ exports.handler = function(event, context, callback) {
 
   key = key_with_token[0];
   const token = key_with_token[1];
-  var match = key.match(/(\d+)x(\d+)\/(.*)/);
-  var width, height, originalKey;
+  var match = key.match(/(\d+)x(\d+)x([a-zA-Z-]+)\/(.*)/);
+  var width, height, options, originalKey;
 
   if (match) {
     width = parseInt(match[1], 10);
     height = parseInt(match[2], 10);
-    originalKey = match[3];
+    options = match[3];
+    originalKey = match[4];
   }
   else {
-    match = key.match(/(\d+)x\/(.*)/);
-    if (match) {
-      width = parseInt(match[1], 10);
-      height = null;
-    }
-    else {
-      match = key.match(/x(\d+)\/(.*)/);
-      width = null;
-      height = parseInt(match[1], 10);
-    }
-    originalKey = match[2];
+      match = key.match(/(\d+)x(\d+)\/(.*)/);
+      if (match) {
+        width = parseInt(match[1], 10);
+        height = parseInt(match[2], 10);
+        originalKey = match[3];
+      }
+      else {
+        match = key.match(/(\d+)x\/(.*)/);
+        if (match) {
+            width = parseInt(match[1], 10);
+            height = null;
+        }
+        else {
+            match = key.match(/x(\d+)\/(.*)/);
+            width = null;
+            height = parseInt(match[1], 10);
+        }
+        originalKey = match[2];
+      }
+      options = null;
   }
 
   const hash = crypto.createHmac('sha256', SECRET_KEY).update(originalKey).digest('hex');
@@ -54,11 +64,19 @@ exports.handler = function(event, context, callback) {
   }
 
   S3.getObject({Bucket: BUCKET, Key: originalKey}).promise()
-    .then(data => Sharp(data.Body)
-      .resize(width, height)
-      .toFormat('jpeg', {'quality': 90})
-      .toBuffer()
-    )
+    .then((data) => {
+      var img = Sharp(data.Body).resize(width, height);
+
+      if (options && options.indexOf('fit') >= 0) {
+          img = img.max();
+      }
+
+      if (options && options.indexOf('nonupscale') >= 0) {
+          img = img.withoutEnlargement();
+      }
+
+      return img.toFormat('jpeg', {'quality': 90}).toBuffer()
+    })
     .then(buffer => S3.putObject({
         Body: buffer,
         Bucket: BUCKET,
