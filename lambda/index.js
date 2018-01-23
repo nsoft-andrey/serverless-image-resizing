@@ -15,9 +15,6 @@ exports.handler = function(event, context, callback) {
   var key = event.queryStringParameters.key;
   var key_with_token = key.split('?t=');
 
-    // TODO: add the cropping support
-    // upscale - withoutEnlargement should be true
-
   if(key_with_token.length != 2) {
       return context.fail("Permissions denied");
   }
@@ -26,6 +23,12 @@ exports.handler = function(event, context, callback) {
   const token = key_with_token[1];
   var match = key.match(/(\d+)x(\d+)x([a-zA-Z-]+)\/(.*)/);
   var width, height, options, originalKey;
+
+  const hash = crypto.createHmac('sha256', SECRET_KEY).update(key).digest('hex');
+
+  if(token != hash) {
+      return context.fail("Permissions denied");
+  }
 
   if (match) {
     width = parseInt(match[1], 10);
@@ -54,13 +57,6 @@ exports.handler = function(event, context, callback) {
         originalKey = match[2];
       }
       options = null;
-  }
-
-  const hash = crypto.createHmac('sha256', SECRET_KEY).update(originalKey).digest('hex');
-
-      //.withoutEnlargement()
-  if(token != hash) {
-      return context.fail("Permissions denied");
   }
 
   S3.getObject({Bucket: BUCKET, Key: originalKey}).promise()
