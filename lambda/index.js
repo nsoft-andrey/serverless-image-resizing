@@ -16,6 +16,7 @@ exports.handler = function(event, context, callback) {
   var key_with_token = key.split('?t=');
 
   if(key_with_token.length != 2) {
+      console.log('key =', key);
       return context.fail("Permissions denied");
   }
 
@@ -27,6 +28,7 @@ exports.handler = function(event, context, callback) {
   const hash = crypto.createHmac('sha256', SECRET_KEY).update(key).digest('hex');
 
   if(token != hash) {
+      console.log('key =', key);
       return context.fail("Permissions denied");
   }
 
